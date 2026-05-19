@@ -1,8 +1,25 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useDispatch } from 'react-redux';
+import { addItemToCart } from '../../store/slices/cartSlice';
 
 const ProductCard = ({ product }) => {
+  const dispatch = useDispatch();
+  const [added, setAdded] = useState(false);
+
+  const handleQuickAdd = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let defaultAttr = '';
+    if (product.attributes && product.attributes.length > 0) {
+      defaultAttr = product.attributes[0].value.split(', ')[0];
+    }
+    dispatch(addItemToCart({ productId: product._id, quantity: 1, attribute: defaultAttr }));
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
+
   return (
     <motion.div 
       whileHover={{ y: -5 }}
@@ -33,8 +50,11 @@ const ProductCard = ({ product }) => {
 
         {/* Hover Action */}
         <div className="absolute bottom-0 left-0 w-full p-4 translate-y-full opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-          <button className="w-full btn btn-primary py-3 uppercase text-sm tracking-wider shadow-lg">
-            Quick Add
+          <button 
+            onClick={handleQuickAdd}
+            className="w-full btn btn-primary py-3 uppercase text-sm tracking-wider shadow-lg"
+          >
+            {added ? 'Added!' : 'Quick Add'}
           </button>
         </div>
       </div>

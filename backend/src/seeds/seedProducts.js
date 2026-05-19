@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '../../.env' });
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const connectDB = require('../config/db');
@@ -255,7 +255,13 @@ const seedProducts = async () => {
   try {
     await connectDB();
     await Product.deleteMany();
-    await Product.insertMany(products);
+    
+    const productsWithSlugs = products.map(p => ({
+      ...p,
+      slug: p.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-')
+    }));
+    
+    await Product.insertMany(productsWithSlugs);
     console.log('✅ Products seeded successfully!');
     process.exit();
   } catch (error) {

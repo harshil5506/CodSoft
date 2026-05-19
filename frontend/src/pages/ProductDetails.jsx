@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { addItemToCart } from '../store/slices/cartSlice';
 import api from '../services/api';
 
 const ProductDetails = () => {
   const { slug } = useParams();
+  const dispatch = useDispatch();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedAttribute, setSelectedAttribute] = useState('');
+  const [added, setAdded] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -55,8 +59,9 @@ const ProductDetails = () => {
   }
 
   const handleAddToCart = () => {
-    // Dispatch to Redux or use API call
-    console.log(`Add to cart: ${product.name}, Qty: ${quantity}, Attr: ${selectedAttribute}`);
+    dispatch(addItemToCart({ productId: product._id, quantity, attribute: selectedAttribute }));
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
@@ -146,7 +151,7 @@ const ProductDetails = () => {
             onClick={handleAddToCart}
             className="btn btn-primary w-full py-4 text-center font-bold tracking-widest uppercase mb-4"
           >
-            Add to Cart
+            {added ? 'Added to Cart!' : 'Add to Cart'}
           </button>
           
           <button className="btn btn-outline w-full py-4 text-center font-bold tracking-widest uppercase">

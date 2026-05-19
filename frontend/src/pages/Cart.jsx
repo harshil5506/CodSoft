@@ -1,27 +1,41 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchCart, updateItemQty, removeItemFromCart } from '../store/slices/cartSlice';
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([
-    {
-      _id: '1',
-      name: 'HyperWhey Pro — Chocolate Fudge',
-      price: 2999,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?q=80&w=600&auto=format&fit=crop',
-      attribute: '1kg'
-    }
-  ]);
+  const dispatch = useDispatch();
+  const { items: cartItems, loading } = useSelector((state) => state.cart);
+
+  useEffect(() => {
+    dispatch(fetchCart());
+  }, [dispatch]);
 
   const updateQty = (id, newQty) => {
-    setCartItems(cartItems.map(item => item._id === id ? { ...item, quantity: Math.max(1, newQty) } : item));
+    if (newQty < 1) return;
+    dispatch(updateItemQty({ itemId: id, quantity: newQty }));
   };
 
   const removeItem = (id) => {
-    setCartItems(cartItems.filter(item => item._id !== id));
+    dispatch(removeItemFromCart(id));
   };
 
-  const subtotal = cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const subtotal = cartItems.reduce((acc, item) => {
+    const price = item.product?.price || 0;
+    return acc + (price * item.quantity);
+  }, 0);
+
+  if (loading && cartItems.length === 0) {
+    return (
+      <div className="container-custom py-24 text-center">
+        <div className="animate-pulse space-y-6">
+          <div className="h-8 bg-muted w-1/4 mx-auto"></div>
+          <div className="h-4 bg-muted w-2/4 mx-auto"></div>
+          <div className="h-64 bg-muted w-full max-w-4xl mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container-custom py-12">
@@ -40,21 +54,43 @@ const Cart = () => {
           <div className="lg:col-span-2 space-y-6">
             {cartItems.map((item) => (
               <div key={item._id} className="flex gap-6 border border-border p-4 bg-card">
-                <div className="w-24 h-24 bg-muted flex-shrink-0">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover grayscale" />
+                <div className="w-24 h-24 bg-muted flex-shrink-0 flex items-center justify-center overflow-hidden">
+                  <img 
+                    src={item.product?.images?.[0]?.url || 'https://via.placeholder.com/400x500'} 
+                    alt={item.product?.name || 'Product'} 
+                    className="w-auto max-h-full object-cover" 
+                  />
                 </div>
                 <div className="flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="font-bold text-lg leading-tight mb-1">{item.name}</h3>
+                    <h3 className="font-bold text-lg leading-tight mb-1">
+                      {item.product ? (
+                        <Link to={`/product/${item.product.slug}`} className="hover:underline">
+                          {item.product.name}
+                        </Link>
+                      ) : (
+                        'Product details unavailable'
+                      )}
+                    </h3>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">{item.attribute}</p>
-                    <span className="font-semibold text-sm">₹{item.price}</span>
+                    <span className="font-semibold text-sm">₹{item.product?.price || 0}</span>
                   </div>
                   
                   <div className="flex items-center justify-between mt-4">
                     <div className="flex items-center border border-border">
-                      <button onClick={() => updateQty(item._id, item.quantity - 1)} className="px-2 py-1 hover:bg-muted">-</button>
+                      <button 
+                        onClick={() => updateQty(item._id, item.quantity - 1)} 
+                        className="px-2 py-1 hover:bg-muted"
+                      >
+                        -
+                      </button>
                       <span className="px-3 text-sm font-medium">{item.quantity}</span>
-                      <button onClick={() => updateQty(item._id, item.quantity + 1)} className="px-2 py-1 hover:bg-muted">+</button>
+                      <button 
+                        onClick={() => updateQty(item._id, item.quantity + 1)} 
+                        className="px-2 py-1 hover:bg-muted"
+                      >
+                        +
+                      </button>
                     </div>
                     
                     <button onClick={() => removeItem(item._id)} className="text-xs text-red-500 hover:underline">

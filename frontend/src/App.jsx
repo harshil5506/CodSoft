@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { fetchProfile } from './store/slices/authSlice';
+import { fetchCart } from './store/slices/cartSlice';
 import Navbar from './components/common/Navbar';
 import Footer from './components/common/Footer';
 import Home from './pages/Home';
@@ -29,6 +30,7 @@ function App() {
     if (localStorage.getItem('hyperfit_token')) {
       dispatch(fetchProfile());
     }
+    dispatch(fetchCart());
   }, [dispatch]);
 
   return (
@@ -57,11 +59,7 @@ function App() {
             />
             <Route 
               path="/cart" 
-              element={
-                <ProtectedRoute>
-                  <Cart />
-                </ProtectedRoute>
-              } 
+              element={<Cart />} 
             />
             <Route 
               path="/checkout" 
