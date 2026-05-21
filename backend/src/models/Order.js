@@ -42,6 +42,9 @@ const orderSchema = new mongoose.Schema({
   shippingCost: { type: Number, required: true },
   tax: { type: Number, required: true },
   totalAmount: { type: Number, required: true },
+  coinsEarned: { type: Number, default: 0 },
+  coinsUsed: { type: Number, default: 0 },
+  coinDiscount: { type: Number, default: 0 },
   orderStatus: {
     type: String,
     enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'],

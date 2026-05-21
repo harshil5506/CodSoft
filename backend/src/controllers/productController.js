@@ -1,6 +1,14 @@
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 
+const normalizeCategory = (value = '') =>
+  value
+    .toString()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 // @desc    Fetch all products
 // @route   GET /api/products
 // @access  Public
@@ -17,7 +25,9 @@ const getProducts = asyncHandler(async (req, res) => {
       }
     : {};
     
-  const category = req.query.category ? { category: req.query.category } : {};
+  const category = req.query.category
+    ? { category: normalizeCategory(req.query.category) }
+    : {};
 
   const count = await Product.countDocuments({ ...keyword, ...category, isActive: true });
   const products = await Product.find({ ...keyword, ...category, isActive: true })
@@ -55,8 +65,62 @@ const getProductBySlug = asyncHandler(async (req, res) => {
   }
 });
 
+const Order = require('../models/Order');
+
+// @desc    Create new review
+// @route   POST /api/products/:id/reviews
+// @access  Private
+const createProductReview = asyncHandler(async (req, res) => {
+  const { rating, comment, images } = req.body;
+  
+  const product = await Product.findById(req.params.id);
+
+  if (product) {
+    const alreadyReviewed = product.reviews.find(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+
+    if (alreadyReviewed) {
+      res.status(400);
+      throw new Error('Product already reviewed');
+    }
+
+    // Check if user has purchased the product
+    const orders = await Order.find({ user: req.user._id });
+    const hasPurchased = orders.some((order) =>
+      order.orderItems.some((item) => item.product.toString() === product._id.toString())
+    );
+
+    if (!hasPurchased) {
+      res.status(400);
+      throw new Error('You can only review products you have purchased');
+    }
+
+    const review = {
+      name: req.user.name,
+      rating: Number(rating),
+      comment,
+      images: images || [],
+      user: req.user._id,
+    };
+
+    product.reviews.push(review);
+    product.numReviews = product.reviews.length;
+    product.ratings =
+      product.reviews.reduce((acc, item) => item.rating + acc, 0) /
+      product.reviews.length;
+
+    await product.save();
+    res.status(201).json({ message: 'Review added' });
+  } else {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+});
+
 module.exports = {
   getProducts,
   getProductById,
   getProductBySlug,
+  createProductReview,
 };

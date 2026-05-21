@@ -1,10 +1,7 @@
-const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
-const generateToken = require('../utils/generateToken');
+const asyncHandler = require("express-async-handler");
+const User = require("../models/User");
+const generateToken = require("../utils/generateToken");
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
 const registerUser = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -12,7 +9,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   if (userExists) {
     res.status(400);
-    throw new Error('User already exists');
+    throw new Error("User already exists");
   }
 
   const user = await User.create({
@@ -22,58 +19,58 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (user) {
-    generateToken(res, user._id);
+    const token = generateToken(res, user._id);
 
     res.status(201).json({
+      token,
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      sellerStatus: user.sellerStatus,
+      businessDetails: user.businessDetails,
+      hyperCoins: user.hyperCoins,
+      lifetimeCoinsEarned: user.lifetimeCoinsEarned,
     });
   } else {
     res.status(400);
-    throw new Error('Invalid user data');
+    throw new Error("Invalid user data");
   }
 });
 
-// @desc    Auth user & get token
-// @route   POST /api/auth/login
-// @access  Public
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
-  // Check for user email
-  const user = await User.findOne({ email }).select('+password');
+  const user = await User.findOne({ email }).select("+password");
 
   if (user && (await user.matchPassword(password))) {
-    generateToken(res, user._id);
+    const token = generateToken(res, user._id);
 
     res.json({
+      token,
       _id: user._id,
       name: user.name,
       email: user.email,
       role: user.role,
+      sellerStatus: user.sellerStatus,
+      businessDetails: user.businessDetails,
+      hyperCoins: user.hyperCoins,
+      lifetimeCoinsEarned: user.lifetimeCoinsEarned,
     });
   } else {
     res.status(401);
-    throw new Error('Invalid email or password');
+    throw new Error("Invalid email or password");
   }
 });
 
-// @desc    Logout user / clear cookie
-// @route   POST /api/auth/logout
-// @access  Public
 const logoutUser = asyncHandler(async (req, res) => {
-  res.cookie('jwt', '', {
+  res.cookie("jwt", "", {
     httpOnly: true,
     expires: new Date(0),
   });
-  res.status(200).json({ message: 'Logged out successfully' });
+  res.status(200).json({ message: "Logged out successfully" });
 });
 
-// @desc    Get user profile
-// @route   GET /api/auth/profile
-// @access  Private
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
@@ -83,11 +80,90 @@ const getUserProfile = asyncHandler(async (req, res) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      sellerStatus: user.sellerStatus,
+      businessDetails: user.businessDetails,
+      hyperCoins: user.hyperCoins,
+      lifetimeCoinsEarned: user.lifetimeCoinsEarned,
+      addresses: user.addresses,
     });
   } else {
     res.status(404);
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
+});
+
+// @desc    Save address for user
+// @route   POST /api/auth/address
+// @access  Private
+const saveAddress = asyncHandler(async (req, res) => {
+  const { street, city, state, zipCode, country, isDefault } = req.body;
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  const newAddress = {
+    street,
+    city,
+    state,
+    zipCode,
+    country,
+    isDefault: isDefault || false,
+  };
+
+  if (isDefault) {
+    user.addresses.forEach((addr) => (addr.isDefault = false));
+  }
+
+  user.addresses.push(newAddress);
+  await user.save();
+
+  res.status(201).json(user.addresses);
+});
+
+// @desc    Get user addresses
+// @route   GET /api/auth/addresses
+// @access  Private
+const getUserAddresses = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  res.json(user.addresses);
+});
+
+const registerSeller = asyncHandler(async (req, res) => {
+  const { companyName, taxId, phone, address } = req.body;
+
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
+  user.role = "seller";
+  user.sellerStatus = "pending";
+  user.businessDetails = { companyName, taxId, phone, address };
+
+  await user.save();
+
+  res.json({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    sellerStatus: user.sellerStatus,
+    businessDetails: user.businessDetails,
+    hyperCoins: user.hyperCoins,
+    lifetimeCoinsEarned: user.lifetimeCoinsEarned,
+  });
 });
 
 module.exports = {
@@ -95,4 +171,7 @@ module.exports = {
   loginUser,
   logoutUser,
   getUserProfile,
+  registerSeller,
+  saveAddress,
+  getUserAddresses,
 };

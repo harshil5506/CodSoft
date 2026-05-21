@@ -25,6 +25,10 @@ const reviewSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please add a comment'],
   },
+  images: [{
+    url: String,
+    publicId: String,
+  }],
 }, {
   timestamps: true,
 });

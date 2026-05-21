@@ -13,6 +13,8 @@ const {
   createCoupon,
   getAllCoupons,
   deleteCoupon,
+  getPendingSellers,
+  updateSellerStatus,
 } = require('../controllers/adminController');
 
 router.use(protect, admin);
@@ -27,6 +29,9 @@ router.put('/orders/:id/status', updateOrderStatus);
 
 router.get('/users', getAllUsers);
 router.delete('/users/:id', deleteUser);
+
+router.get('/sellers/pending', getPendingSellers);
+router.put('/sellers/:id/status', updateSellerStatus);
 
 router.route('/coupons').get(getAllCoupons).post(createCoupon);
 router.delete('/coupons/:id', deleteCoupon);

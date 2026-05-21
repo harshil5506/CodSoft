@@ -1,271 +1,165 @@
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
-const mongoose = require('mongoose');
-const Product = require('../models/Product');
-const connectDB = require('../config/db');
+require("dotenv").config({
+  path: require("path").resolve(__dirname, "../../.env"),
+});
+const Product = require("../models/Product");
+const connectDB = require("../config/db");
 
-const products = [
-  // SUPPLEMENTS
-  {
-    name: 'HyperWhey Pro — Chocolate Fudge',
-    description: 'Our flagship whey protein concentrate delivering 25g of pure muscle-building protein per serving. Cold-processed for maximum bioavailability, with zero fillers and zero compromises. Engineered for the modern athlete who demands premium quality and honest nutrition.',
-    price: 2999,
-    comparePrice: 3499,
-    category: 'Supplements',
-    stock: 150,
-    isFeatured: true,
-    brand: 'HYPERFIT',
-    ratings: 4.8,
-    numReviews: 124,
-    images: [{ url: 'https://images.unsplash.com/photo-1593095948071-474c5cc2989d?q=80&w=600&auto=format&fit=crop', publicId: 'hyperwhey_choc' }],
-    attributes: [{ key: 'Flavors', value: 'Chocolate Fudge, Vanilla Ice Cream, Strawberry, Unflavored' }, { key: 'Weight', value: '1kg, 2kg, 5kg' }, { key: 'Servings', value: '30 per 1kg' }],
-  },
-  {
-    name: 'HyperWhey Pro — Vanilla Ice Cream',
-    description: 'Clean, smooth vanilla taste with 25g whey protein per serving. No artificial sweeteners, no proprietary blends. Just honest nutrition for serious athletes.',
-    price: 2999,
-    comparePrice: 3499,
-    category: 'Supplements',
-    stock: 120,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.7,
-    numReviews: 89,
-    images: [{ url: 'https://images.unsplash.com/photo-1612532275215-89ebbdc43749?q=80&w=600&auto=format&fit=crop', publicId: 'hyperwhey_van' }],
-    attributes: [{ key: 'Flavors', value: 'Vanilla Ice Cream' }, { key: 'Weight', value: '1kg, 2kg' }],
-  },
-  {
-    name: 'Pre-Surge Extreme Pre-Workout',
-    description: 'Hit every session with maximum intensity. Pre-Surge delivers laser focus, explosive power, and skin-splitting pumps with scientifically dosed ingredients — no underdosed prop blends, ever.',
-    price: 1799,
-    comparePrice: 2199,
-    category: 'Supplements',
-    stock: 200,
-    isFeatured: true,
-    brand: 'HYPERFIT',
-    ratings: 4.9,
-    numReviews: 211,
-    images: [{ url: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?q=80&w=600&auto=format&fit=crop', publicId: 'presurge' }],
-    attributes: [{ key: 'Flavors', value: 'Blue Raspberry, Watermelon, Green Apple' }, { key: 'Servings', value: '30 servings' }],
-  },
-  {
-    name: 'Omega-3 Fish Oil — 1000mg',
-    description: 'Pharmaceutical-grade omega-3 fish oil with a high EPA/DHA ratio. Supports heart health, joint recovery, and cognitive performance. Molecularly distilled for purity.',
-    price: 799,
-    comparePrice: 999,
-    category: 'Supplements',
-    stock: 300,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.6,
-    numReviews: 67,
-    images: [{ url: 'https://images.unsplash.com/photo-1607619056574-7b8d3ee536b2?q=80&w=600&auto=format&fit=crop', publicId: 'omega3' }],
-    attributes: [{ key: 'Count', value: '60 softgels, 120 softgels' }],
-  },
-  {
-    name: 'Creatine Monohydrate — Micronized',
-    description: 'The most researched supplement in sports nutrition. Micronized for superior solubility and absorption. Enhance strength, power output, and muscle recovery.',
-    price: 999,
-    comparePrice: 1299,
-    category: 'Supplements',
-    stock: 250,
-    isFeatured: true,
-    brand: 'HYPERFIT',
-    ratings: 4.9,
-    numReviews: 302,
-    images: [{ url: 'https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?q=80&w=600&auto=format&fit=crop', publicId: 'creatine' }],
-    attributes: [{ key: 'Weight', value: '300g, 500g, 1kg' }],
-  },
-  {
-    name: 'HyperCasein Night Protein',
-    description: 'Slow-digesting micellar casein designed for overnight muscle recovery. Feed your muscles all night with a sustained amino acid release. Wake up recovered.',
-    price: 3299,
-    comparePrice: 3799,
-    category: 'Supplements',
-    stock: 90,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.7,
-    numReviews: 55,
-    images: [{ url: 'https://images.unsplash.com/photo-1542040222-a1bcd0a0b3f4?q=80&w=600&auto=format&fit=crop', publicId: 'casein' }],
-    attributes: [{ key: 'Flavors', value: 'Chocolate, Vanilla' }, { key: 'Weight', value: '1kg, 2kg' }],
-  },
+const image = (category, filename) => ({
+  url: `/images/${category}/${filename}`,
+  publicId: filename.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9]+/g, "_"),
+});
 
-  // APPAREL
-  {
-    name: 'HyperCore Compression Tee',
-    description: 'Built for the relentless. Our HyperCore tee features moisture-wicking performance fabric, four-way stretch, and a body-mapped construction that moves with you, not against you. Minimal design, maximum performance.',
-    price: 1499,
-    comparePrice: 1999,
-    category: 'Apparel',
-    stock: 80,
-    isFeatured: true,
-    brand: 'HYPERFIT',
-    ratings: 4.8,
-    numReviews: 93,
-    images: [{ url: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=600&auto=format&fit=crop', publicId: 'hypercore_tee' }],
-    attributes: [{ key: 'Sizes', value: 'XS, S, M, L, XL, XXL' }, { key: 'Colors', value: 'Black, White, Charcoal, Slate' }],
-  },
-  {
-    name: 'Velocity Training Shorts',
-    description: 'Engineered for peak performance. These training shorts feature a 7" inseam, built-in liner, deep pockets, and an ultra-lightweight construction that won\'t slow you down.',
-    price: 1299,
-    comparePrice: 1699,
-    category: 'Apparel',
-    stock: 60,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.7,
-    numReviews: 78,
-    images: [{ url: 'https://images.unsplash.com/photo-1591195853828-11db59a44f43?q=80&w=600&auto=format&fit=crop', publicId: 'velocity_shorts' }],
-    attributes: [{ key: 'Sizes', value: 'S, M, L, XL, XXL' }, { key: 'Colors', value: 'Black, Navy, Olive' }],
-  },
-  {
-    name: 'Apex Performance Hoodie',
-    description: 'The ultimate training hoodie. Heavyweight fleece construction, kangaroo pocket, and an athletic fit that transitions from the gym to the streets. Built for the dedicated.',
-    price: 2499,
-    comparePrice: 2999,
-    category: 'Apparel',
-    stock: 45,
-    isFeatured: true,
-    brand: 'HYPERFIT',
-    ratings: 4.9,
-    numReviews: 115,
-    images: [{ url: 'https://images.unsplash.com/photo-1556821840-3a63f15732ce?q=80&w=600&auto=format&fit=crop', publicId: 'apex_hoodie' }],
-    attributes: [{ key: 'Sizes', value: 'S, M, L, XL, XXL' }, { key: 'Colors', value: 'Black, Charcoal, Stone' }],
-  },
-  {
-    name: 'FlexForm Leggings — High Waist',
-    description: 'High-waisted leggings with 4-way stretch, seamless construction, and a compressive fit that sculpts and supports. Squat-proof fabric tested for every movement.',
-    price: 1699,
-    comparePrice: 2199,
-    category: 'Apparel',
-    stock: 70,
-    isFeatured: true,
-    brand: 'HYPERFIT',
-    ratings: 4.8,
-    numReviews: 142,
-    images: [{ url: 'https://images.unsplash.com/photo-1506629082955-511b1aa562c8?q=80&w=600&auto=format&fit=crop', publicId: 'flexform_leggings' }],
-    attributes: [{ key: 'Sizes', value: 'XS, S, M, L, XL' }, { key: 'Colors', value: 'Black, Slate, Burgundy' }],
-  },
+const slugify = (value) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-zA-Z0-9]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 
-  // EQUIPMENT
-  {
-    name: 'Atlas Resistance Band Set',
-    description: 'Five heavy-duty latex resistance bands ranging from 10lb to 150lb. Ideal for strength training, mobility work, and rehabilitation. Compact, portable, and brutally effective.',
-    price: 1999,
-    comparePrice: 2499,
-    category: 'Equipment',
-    stock: 100,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.7,
-    numReviews: 88,
-    images: [{ url: 'https://images.unsplash.com/photo-1598289431512-b97b0917affc?q=80&w=600&auto=format&fit=crop', publicId: 'resistance_bands' }],
-    attributes: [{ key: 'Resistance', value: '10lb, 25lb, 50lb, 80lb, 150lb' }],
-  },
-  {
-    name: 'IronGrip Adjustable Dumbbells',
-    description: 'Replace 15 pairs of dumbbells. Our IronGrip adjustable system lets you change weight from 5kg to 32.5kg in seconds. Space-efficient, premium build quality.',
-    price: 14999,
-    comparePrice: 17999,
-    category: 'Equipment',
-    stock: 30,
-    isFeatured: true,
-    brand: 'HYPERFIT',
-    ratings: 4.9,
-    numReviews: 47,
-    images: [{ url: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?q=80&w=600&auto=format&fit=crop', publicId: 'adj_dumbbell' }],
-    attributes: [{ key: 'Range', value: '5kg - 32.5kg' }, { key: 'Increment', value: '2.5kg' }],
-  },
-  {
-    name: 'PeakFlow Yoga Mat — 6mm',
-    description: 'Non-slip, eco-friendly TPE yoga mat with alignment markers. 6mm cushioning for joint protection, closed-cell surface resists sweat absorption. For yoga, Pilates, and stretching.',
-    price: 1499,
-    comparePrice: 1999,
-    category: 'Equipment',
-    stock: 120,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.6,
-    numReviews: 73,
-    images: [{ url: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=600&auto=format&fit=crop', publicId: 'yoga_mat' }],
-    attributes: [{ key: 'Colors', value: 'Black, Slate Grey, Forest Green' }, { key: 'Thickness', value: '6mm' }],
-  },
-  {
-    name: 'PowerPull Pull-Up Bar',
-    description: 'Multi-grip doorframe pull-up bar. No screws, no damage. Supports up to 150kg with a quick-lock design. Train lats, biceps, and core anywhere, anytime.',
-    price: 2499,
-    comparePrice: 2999,
-    category: 'Equipment',
-    stock: 55,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.5,
-    numReviews: 61,
-    images: [{ url: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?q=80&w=600&auto=format&fit=crop', publicId: 'pullup_bar' }],
-    attributes: [{ key: 'Max Load', value: '150kg' }],
-  },
+const apparel = [
+  ["Allen Solly Performance Tee - Black", 1299, 1799, "allen_a-1.jpeg", true],
+  ["Allen Solly Training Tee - Navy", 1299, 1799, "allen_a-2.jpeg", false],
+  ["Allen Solly Active Polo - Grey", 1499, 2099, "allen_a-3.jpeg", false],
+  ["Allen Solly Flex Joggers - Charcoal", 2299, 2999, "allen_a-4.jpeg", true],
+  ["Allen Solly Gym Shorts - Black", 1199, 1599, "allen_a-5.jpeg", false],
+  ["Allen Solly Sleeveless Tank - White", 999, 1399, "allen_a-6.jpeg", false],
+  ["Allen Solly Training Hoodie - Olive", 2499, 3299, "allen_a-7.jpeg", true],
+  ["Allen Solly Track Pants - Navy", 2199, 2899, "allen_a-8.jpeg", false],
+  ["Allen Solly Dry Fit Tee - Red", 1299, 1699, "allen_a-9.jpeg", false],
+  ["Gymshark Central Joggers - Black", 2999, 3899, "gymshark-joggers.jpg", true],
+  ["Gymshark Fit Tank Top", 1499, 1999, "gymshark-tank.jpg", true],
+].map(([name, price, comparePrice, filename, isFeatured], index) => ({
+  name,
+  description:
+    "Premium training apparel designed for comfort, sweat control, and daily gym performance.",
+  price,
+  comparePrice,
+  category: "Apparel",
+  stock: 70 + index * 4,
+  isFeatured,
+  brand: name.split(" ").slice(0, name.startsWith("Under Armour") ? 2 : 1).join(" "),
+  ratings: 4.5 + (index % 5) / 10,
+  numReviews: 80 + index * 17,
+  images: [image("apparel", filename)],
+  attributes: [
+    { key: "Sizes", value: "S, M, L, XL, XXL" },
+    { key: "Colors", value: "Black, Grey, Navy, White" },
+  ],
+}));
 
-  // ACCESSORIES
-  {
-    name: 'TitanGrip Lifting Straps',
-    description: 'Heavy-duty cotton lifting straps with reinforced stitching. Eliminate grip failure on heavy pulls. Used by competitive powerlifters and strongmen worldwide.',
-    price: 499,
-    comparePrice: 699,
-    category: 'Accessories',
-    stock: 200,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.8,
-    numReviews: 156,
-    images: [{ url: 'https://images.unsplash.com/photo-1571019613576-2b22c76fd955?q=80&w=600&auto=format&fit=crop', publicId: 'lifting_straps' }],
-    attributes: [{ key: 'Material', value: 'Cotton, Neoprene' }],
-  },
-  {
-    name: 'HyperShaker Pro — 700ml',
-    description: 'Leak-proof blender bottle with a whisk ball mixer. BPA-free Tritan plastic, dishwasher safe, and stackable design. The only shaker you\'ll ever need.',
-    price: 699,
-    comparePrice: 899,
-    category: 'Accessories',
-    stock: 250,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.7,
-    numReviews: 198,
-    images: [{ url: 'https://images.unsplash.com/photo-1581122584612-713f89daa8eb?q=80&w=600&auto=format&fit=crop', publicId: 'shaker' }],
-    attributes: [{ key: 'Colors', value: 'Black, White, Red' }, { key: 'Size', value: '500ml, 700ml, 1L' }],
-  },
-  {
-    name: 'EliteGuard Weightlifting Belt',
-    description: '10mm genuine leather powerlifting belt with a double-prong buckle. Provides maximum lumbar support for squats, deadlifts, and overhead presses. Competition approved.',
-    price: 2999,
-    comparePrice: 3499,
-    category: 'Accessories',
-    stock: 40,
-    isFeatured: false,
-    brand: 'HYPERFIT',
-    ratings: 4.9,
-    numReviews: 82,
-    images: [{ url: 'https://images.unsplash.com/photo-1534258936925-c58bed479fcb?q=80&w=600&auto=format&fit=crop', publicId: 'lifting_belt' }],
-    attributes: [{ key: 'Sizes', value: 'S (26-32"), M (32-36"), L (36-40"), XL (40-44")' }],
-  },
-];
+const supplements = [
+  ["MuscleBlaze Biozyme Whey Protein - Chocolate", 2799, 3499, "muscleblaze_s-1.jpg", true],
+  ["MuscleBlaze Creatine Monohydrate - 250g", 899, 1299, "muscleblaze_s-2.jpg", true],
+  ["MuscleBlaze Pre Workout - Fruit Fury", 1599, 2199, "muscleblaze_s-3.jpg", false],
+  ["MuscleBlaze Mass Gainer - Chocolate", 2199, 2999, "muscleblaze_s-4.jpg", false],
+  ["Optimum Nutrition Gold Standard Whey - 2lb", 3499, 4299, "optimum_s-1.jpeg", true],
+  ["Optimum Nutrition Whey Isolate - Vanilla", 4299, 5299, "optimim_s-2.jpeg", true],
+  ["Optimum Nutrition Casein Protein - Chocolate", 3599, 4499, "optimim_s-3.jpeg", false],
+  ["Optimum Nutrition Micronized Creatine", 1299, 1799, "optimim_s-4.jpeg", true],
+  ["Optimum Nutrition Amino Energy", 1899, 2499, "optimim_s-5.jpeg", false],
+  ["Optimum Nutrition Serious Mass", 3299, 4199, "optimim_s-6.jpeg", false],
+  ["Optimum Nutrition BCAA 1000 Caps", 1499, 1999, "optimim_s-7.jpeg", false],
+].map(([name, price, comparePrice, filename, isFeatured], index) => ({
+  name,
+  description:
+    "Science-backed sports nutrition for strength, recovery, endurance, and lean performance goals.",
+  price,
+  comparePrice,
+  category: "Supplements",
+  stock: 95 + index * 7,
+  isFeatured,
+  brand: name.startsWith("MuscleBlaze") ? "MuscleBlaze" : "Optimum Nutrition",
+  ratings: 4.6 + (index % 4) / 10,
+  numReviews: 120 + index * 28,
+  images: [image("supplements", filename)],
+  attributes: [
+    { key: "Flavors", value: "Chocolate, Vanilla, Strawberry" },
+    { key: "Servings", value: "30, 60" },
+  ],
+}));
+
+const equipment = [
+  ["Cosco Treadmill Pro Runner", 28999, 34999, "cosco_e-1.jpeg", true],
+  ["Cosco Exercise Bike", 15999, 19999, "cosco_e-2.jpeg", true],
+  ["Cosco Home Gym Bench", 7999, 9999, "cosco_e-4.jpeg", false],
+  ["Cosco Boxing Gloves", 1499, 1999, "cosco_e-5.jpeg", false],
+  ["Cosco Medicine Ball", 1199, 1699, "cosco_e-6.jpeg", false],
+  ["Cosco Skipping Rope", 399, 699, "cosco_e-7.jpeg", false],
+  ["PowerMax Fitness Treadmill", 32999, 42999, "powermax_e-1.jpeg", true],
+  ["PowerMax Elliptical Trainer", 26999, 32999, "powermax_e-2.jpeg", true],
+  ["PowerMax Spin Bike", 18999, 24999, "powermax_e-3.jpeg", false],
+  ["Adjustable Dumbbell Set 5-50kg", 24999, 29999, "adj-dumbbells.jpg", true],
+  ["Kettlebell 16kg Cast Iron", 1299, 1799, "kettlebell.jpg", true],
+  ["Yoga Mat Premium TPE 6mm", 2299, 3299, "yoga-mat.jpg", false],
+].map(([name, price, comparePrice, filename, isFeatured], index) => ({
+  name,
+  description:
+    "Durable fitness equipment selected for home gyms, strength training, conditioning, and recovery work.",
+  price,
+  comparePrice,
+  category: "Equipment",
+  stock: 28 + index * 5,
+  isFeatured,
+  brand: name.startsWith("PowerMax") ? "PowerMax" : name.split(" ")[0],
+  ratings: 4.4 + (index % 5) / 10,
+  numReviews: 45 + index * 13,
+  images: [image("equipment", filename)],
+  attributes: [
+    { key: "Use", value: "Home Gym, Strength, Conditioning" },
+    { key: "Warranty", value: "6 Months, 1 Year" },
+  ],
+}));
+
+const accessories = [
+  ["Nike Training Duffel Bag", 1899, 2499, "nikebag_a-1.jpeg", true, "Nike"],
+  ["Fitnesstack Gym Backpack", 1499, 1999, "fitnesstackbag_a-2.jpeg", false, "Fitnesstack"],
+  ["MikeFit Lifting Gloves", 799, 1199, "mikefit_a-3.jpeg", false, "MikeFit"],
+  ["ActiveGear Shaker Bottle", 499, 799, "activegear_a-4.jpeg", false, "ActiveGear"],
+  ["Yoga Mat Carry Strap", 399, 699, "yoyamat_a-5.jpeg", false, "YogaMat"],
+  ["YogaMat Eco Mat - Blue", 999, 1499, "yogamat_a-6.jpeg", true, "YogaMat"],
+  ["YogaMat Eco Mat - Black", 999, 1499, "yogamat_a-7.jpeg", false, "YogaMat"],
+  ["Resistance Bands Light Set", 699, 999, "bands_a-8.jpeg", true, "ActiveGear"],
+  ["Resistance Bands Pro Set", 999, 1399, "bands_a-9.jpeg", false, "ActiveGear"],
+  ["Resistance Bands Heavy Set", 1299, 1699, "bands_a-10.jpeg", false, "ActiveGear"],
+  ["Powerlifting Belt 10mm", 2499, 3299, "belt_a-11.jpeg", true, "ActiveGear"],
+  ["Powerlifting Belt 13mm", 2999, 3999, "belt_a-12.jpeg", false, "ActiveGear"],
+  ["Schiek Lifting Straps Pair", 899, 1199, "schiek-straps.jpg", false, "Schiek"],
+].map(([name, price, comparePrice, filename, isFeatured, brand], index) => ({
+  name,
+  description:
+    "Training accessories built for better grip, organization, support, and repeatable workout performance.",
+  price,
+  comparePrice,
+  category: "Accessories",
+  stock: 75 + index * 9,
+  isFeatured,
+  brand,
+  ratings: 4.3 + (index % 6) / 10,
+  numReviews: 52 + index * 16,
+  images: [image("accessories", filename)],
+  attributes: [
+    { key: "Type", value: "Gym Accessory" },
+    { key: "Colors", value: "Black, Grey, Blue" },
+  ],
+}));
+
+const products = [...supplements, ...apparel, ...equipment, ...accessories];
 
 const seedProducts = async () => {
   try {
     await connectDB();
     await Product.deleteMany();
-    
-    const productsWithSlugs = products.map(p => ({
-      ...p,
-      slug: p.name.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-').replace(/-+/g, '-')
+
+    const productsWithSlugs = products.map((product) => ({
+      ...product,
+      slug: slugify(product.name),
     }));
-    
+
     await Product.insertMany(productsWithSlugs);
-    console.log('✅ Products seeded successfully!');
+    console.log(`Products seeded successfully: ${productsWithSlugs.length}`);
     process.exit();
   } catch (error) {
-    console.error(`❌ Error: ${error.message}`);
+    console.error(`Error: ${error.message}`);
     process.exit(1);
   }
 };

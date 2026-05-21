@@ -31,6 +31,15 @@ export const fetchProfile = createAsyncThunk('auth/profile', async (_, { rejectW
   }
 });
 
+export const registerSeller = createAsyncThunk('auth/registerSeller', async (sellerData, { rejectWithValue }) => {
+  try {
+    const { data } = await api.post('/auth/register-seller', sellerData);
+    return data;
+  } catch (err) {
+    return rejectWithValue(err.response?.data?.message || 'Seller registration failed');
+  }
+});
+
 const authSlice = createSlice({
   name: 'auth',
   initialState: {
@@ -71,14 +80,28 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      .addCase(fetchProfile.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(fetchProfile.fulfilled, (state, action) => {
+        state.loading = false;
         state.user = action.payload;
         state.isAuthenticated = true;
       })
       .addCase(fetchProfile.rejected, (state) => {
+        state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
         localStorage.removeItem('hyperfit_token');
+      })
+      .addCase(registerSeller.pending, (state) => { state.loading = true; state.error = null; })
+      .addCase(registerSeller.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+      })
+      .addCase(registerSeller.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
